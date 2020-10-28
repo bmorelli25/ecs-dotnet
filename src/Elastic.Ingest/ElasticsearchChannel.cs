@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Elastic.Ingest.Serialization;
-using Elasticsearch.Net;
+using Elastic.Transport;
 
 namespace Elastic.Ingest
 {
@@ -20,8 +20,8 @@ namespace Elastic.Ingest
 	{
 		public static readonly byte[] LineFeed = { (byte)'\n' };
 
-		public static readonly BulkRequestParameters RequestParams =
-			new BulkRequestParameters { QueryString = { { "filter_path", "error, items.*.status,items.*.error" } } };
+		public static readonly RequestParameters RequestParams =
+			new RequestParameters(HttpMethod.GET, supportsBody: true) { QueryString = { { "filter_path", "error, items.*.status,items.*.error" } } };
 
 		public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
 		{
@@ -62,7 +62,7 @@ namespace Elastic.Ingest
 				_backgroundTasks.Add(Task.Factory.StartNew(async () => await ConsumeMessages().ConfigureAwait(false), TaskCreationOptions.LongRunning).Unwrap());
 		}
 
-		private IElasticLowLevelClient _lowLevelClient = default!;
+		private ITransport<ITransportConfigurationValues> _transport = default!;
 
 		public Channel<TEvent> Channel { get; }
 		public ChannelWriter<TEvent> Writer => Channel.Writer;
@@ -114,7 +114,8 @@ namespace Elastic.Ingest
 					BulkResponse response = null!;
 					try
 					{
-						response = await _lowLevelClient.BulkAsync<BulkResponse>(
+						response = await _transport.RequestAsync<BulkResponse>(HttpMethod.POST, "/_bulk",
+								default,
 								PostData.StreamHandler(items,
 									(b, stream) =>
 									{
@@ -214,9 +215,9 @@ namespace Elastic.Ingest
 
 		private void UpdateClient()
 		{
-			if (_options.ShipTo.Client != null)
+			if (_options.ShipTo.Transport != null)
 			{
-				_lowLevelClient = _options.ShipTo.Client;
+				_transport = _options.ShipTo.Transport;
 				return;
 			}
 
@@ -226,32 +227,30 @@ namespace Elastic.Ingest
 			var connectionPool = _options.ShipTo.CreateConnectionPool();
 			var nodes = _options.ShipTo.NodeUris?.ToArray() ?? Array.Empty<Uri>();
 
-			ConnectionConfiguration settings;
-			var serializer = new SystemTextJsonSerializer();
-
+			TransportConfiguration config;
 			if (nodes.Length == 0 && _options.ShipTo.ConnectionPool != ConnectionPoolType.Cloud)
 			{
 				// This is SingleNode with "http://localhost:9200"
 				var singleNodePool = new SingleNodeConnectionPool(new Uri("http://localhost:9200"));
-				settings = new ConnectionConfiguration(singleNodePool, serializer: serializer);
+				config = new TransportConfiguration(singleNodePool);
 			}
 			else if (_options.ConnectionPoolType == ConnectionPoolType.SingleNode
 				|| _options.ConnectionPoolType == ConnectionPoolType.Unknown && nodes.Length == 1)
 			{
 				var singleNodePool = new SingleNodeConnectionPool(nodes[0]);
-				settings = new ConnectionConfiguration(singleNodePool, serializer: serializer);
+				config = new TransportConfiguration(singleNodePool);
 			}
 			else
 			{
-				settings = new ConnectionConfiguration(connectionPool, serializer: serializer);
+				config = new TransportConfiguration(connectionPool);
 			}
 
-			settings = settings.Proxy(new Uri("http://localhost:8080"), "", "");
-			settings = settings.EnableDebugMode();
+			config = config.Proxy(new Uri("http://localhost:8080"), "", "");
+			config = config.EnableDebugMode();
 
-			var lowlevelClient = new ElasticLowLevelClient(settings);
+			var transport = new Transport<TransportConfiguration>(config);
 
-			_ = Interlocked.Exchange(ref _lowLevelClient, lowlevelClient);
+			_ = Interlocked.Exchange(ref _transport, transport);
 		}
 	}
 }
