@@ -62,7 +62,7 @@ namespace Elastic.Ingest
 			ConnectionPool = ConnectionPoolType.Cloud;
 		}
 
-		internal IConnectionPool? CreateConnectionPool()
+		public IConnectionPool? CreateConnectionPool()
 		{
 			switch (ConnectionPool)
 			{
@@ -78,11 +78,11 @@ namespace Elastic.Ingest
 				case ConnectionPoolType.Cloud:
 					if (!string.IsNullOrEmpty(ApiKey))
 					{
-						var apiKeyCredentials = new ApiKeyAuthenticationCredentials(ApiKey);
+						var apiKeyCredentials = new Base64ApiKey(ApiKey);
 						return new CloudConnectionPool(CloudId, apiKeyCredentials);
 					}
 
-					var basicAuthCredentials = new BasicAuthenticationCredentials(Username, Password);
+					var basicAuthCredentials = new BasicAuthentication(Username, Password);
 					return new CloudConnectionPool(CloudId, basicAuthCredentials);
 				default:
 					return null;

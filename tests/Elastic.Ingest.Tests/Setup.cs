@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Threading;
 using Elastic.CommonSchema;
+using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Serialization;
 using Elastic.Transport;
 using Elastic.Transport.VirtualizedCluster;
 using Elastic.Transport.VirtualizedCluster.Components;
@@ -38,7 +40,7 @@ namespace Elastic.Ingest.Tests
 			public TestSession(ITransport<ITransportConfigurationValues> transport)
 			{
 				Transport = transport;
-				BufferOptions = new BufferOptions<Base>()
+				BufferOptions = new ElasticsearchBufferOptions<Base>()
 				{
 					ConcurrentConsumers = 1,
 					MaxConsumerBufferSize = 2,
@@ -63,7 +65,7 @@ namespace Elastic.Ingest.Tests
 
 			public ElasticsearchChannelOptions<Base> ChannelOptions { get; }
 
-			public BufferOptions<Base> BufferOptions { get; }
+			public ElasticsearchBufferOptions<Base> BufferOptions { get; }
 
 			public ManualResetEventSlim WaitHandle { get; } = new ManualResetEventSlim();
 

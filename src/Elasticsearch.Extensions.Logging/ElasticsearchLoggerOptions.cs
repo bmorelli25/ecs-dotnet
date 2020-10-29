@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Ingest;
+using Elastic.Ingest.Elasticsearch;
 
 namespace Elasticsearch.Extensions.Logging
 {

@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Concurrent;
-using Elastic.Ingest;
+using Elastic.Ingest.Elasticsearch;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

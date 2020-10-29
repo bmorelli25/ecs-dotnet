@@ -11,17 +11,17 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Elastic.Ingest.Serialization;
+using Elastic.Ingest.Elasticsearch.Serialization;
 using Elastic.Transport;
 
-namespace Elastic.Ingest
+namespace Elastic.Ingest.Elasticsearch
 {
 	internal static class ElasticsearchChannelStatics
 	{
 		public static readonly byte[] LineFeed = { (byte)'\n' };
 
 		public static readonly RequestParameters RequestParams =
-			new RequestParameters(HttpMethod.GET, supportsBody: true) { QueryString = { { "filter_path", "error, items.*.status,items.*.error" } } };
+			new RequestParameters(HttpMethod.POST, supportsBody: true) { QueryString = { { "filter_path", "error, items.*.status,items.*.error" } } };
 
 		public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
 		{
@@ -66,7 +66,7 @@ namespace Elastic.Ingest
 
 		public Channel<TEvent> Channel { get; }
 		public ChannelWriter<TEvent> Writer => Channel.Writer;
-		public BufferOptions<TEvent> BufferOptions => _options.BufferOptions;
+		public BufferOptions<TEvent, BulkResponse, BulkResponseItem> BufferOptions => _options.BufferOptions;
 
 		private ElasticsearchChannelOptions<TEvent> _options;
 		public ElasticsearchChannelOptions<TEvent> Options

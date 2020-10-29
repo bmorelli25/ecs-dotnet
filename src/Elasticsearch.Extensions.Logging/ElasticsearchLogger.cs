@@ -8,10 +8,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using Elastic.CommonSchema;
-using Elastic.Ingest;
+using Elastic.Ingest.Elasticsearch;
 using Microsoft.Extensions.Logging;
 using Trace = Elastic.CommonSchema.Trace;
 
